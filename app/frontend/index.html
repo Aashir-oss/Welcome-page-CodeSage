@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeSage AI — Developer Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Raleway',sans-serif}
+:root{--bg-main:#0d101a;--panel-bg:rgba(25,29,48,0.65);--container-accent:#424769;--slate-accent:#676f9d;--peach-amber:#f7a261;--peach-hover:#e78b47;--text-white:#ffffff;--text-muted:#a6adbb;--input-bg:rgba(18,22,34,0.6);--border-soft:rgba(255,255,255,0.12)}
+body{background-color:var(--bg-main);color:var(--text-white);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:24px 16px;position:relative;overflow-x:hidden}
+.bg-3d-scene{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.mesh-3d{position:absolute;width:200%;height:200%;top:-50%;left:-50%;background-image:linear-gradient(to right,rgba(103,111,157,0.1) 1px,transparent 1px),linear-gradient(to bottom,rgba(103,111,157,0.1) 1px,transparent 1px);background-size:60px 60px;transform:rotateX(60deg) rotateZ(-25deg) translateZ(-200px);animation:gridMove 20s infinite linear}
+@keyframes gridMove{0%{transform:rotateX(60deg) rotateZ(-25deg) translateY(0px)}100%{transform:rotateX(60deg) rotateZ(-25deg) translateY(60px)}}
+.bg-cube-wrapper{position:absolute;width:320px;height:320px;perspective:1000px;opacity:0.45}
+.cube-3d{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:rotate3d 18s infinite linear}
+.face{position:absolute;width:320px;height:320px;background:rgba(103,111,157,0.08);border:2px solid var(--peach-amber);box-shadow:0 0 35px rgba(247,162,97,0.3),inset 0 0 25px rgba(103,111,157,0.2);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:1.2rem;font-weight:600;color:rgba(255,255,255,0.7);border-radius:20px}
+.front{transform:rotateY(0deg) translateZ(160px)}.back{transform:rotateY(180deg) translateZ(160px)}.right{transform:rotateY(90deg) translateZ(160px)}.left{transform:rotateY(-90deg) translateZ(160px)}.top{transform:rotateX(90deg) translateZ(160px)}.bottom{transform:rotateX(-90deg) translateZ(160px)}
+@keyframes rotate3d{0%{transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg)}100%{transform:rotateX(360deg) rotateY(360deg) rotateZ(180deg)}}
+.sphere-3d{position:absolute;border-radius:50%;filter:blur(20px);opacity:0.5}.orb-1{width:350px;height:350px;background:radial-gradient(circle,#f7a261 0%,rgba(247,162,97,0) 70%);top:-5%;left:5%}.orb-2{width:450px;height:450px;background:radial-gradient(circle,#676f9d 0%,rgba(103,111,157,0) 70%);bottom:-10%;right:5%}.vortex-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,transparent 10%,#0d101a 85%)}
+.auth-container{position:relative;z-index:2;width:100%;max-width:480px}
+.auth-card{background:var(--panel-bg);border:1px solid var(--border-soft);border-radius:24px;padding:40px 36px;backdrop-filter:blur(25px);box-shadow:0 30px 80px rgba(0,0,0,0.65)}
+.brand-box{display:flex;align-items:center;gap:12px;margin-bottom:24px}.logo-icon{width:42px;height:42px;background:var(--peach-amber);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#121622;font-size:1.25rem}
+.brand-text h2{font-size:1.2rem;font-weight:700;color:var(--text-white)}.brand-text h2 span{color:var(--peach-amber)}.brand-text p{font-size:0.75rem;color:var(--text-muted)}
+.tab-switch{display:flex;gap:20px;border-bottom:1px solid var(--border-soft);padding-bottom:10px;margin-bottom:22px}.tab-btn{background:transparent;border:none;color:var(--text-muted);font-size:0.9rem;font-weight:600;cursor:pointer;position:relative;padding-bottom:8px;transition:color 0.25s ease}.tab-btn.active{color:var(--text-white)}.tab-btn.active::after{content:'';position:absolute;bottom:-11px;left:0;width:100%;height:3px;background:var(--peach-amber);border-radius:2px}
+.welcome-head{margin-bottom:20px}.welcome-head h1{font-size:1.65rem;font-weight:700;color:var(--text-white)}.welcome-head p{font-size:0.82rem;color:var(--text-muted);margin-top:4px}
+.auth-form{display:none;flex-direction:column;gap:16px}.auth-form.active{display:flex}
+.input-group{display:flex;flex-direction:column;gap:6px}.input-group label{font-size:0.78rem;color:var(--text-muted);font-weight:500}.input-group small{font-size:0.7rem;color:var(--slate-accent)}
+.input-field{position:relative;display:flex;align-items:center}.field-icon{position:absolute;left:14px;color:var(--text-muted);font-size:0.9rem}.toggle-pwd{position:absolute;right:14px;color:var(--text-muted);font-size:0.9rem;cursor:pointer}
+.input-field input{width:100%;background:var(--input-bg);border:1px solid var(--container-accent);border-radius:10px;padding:12px 14px 12px 40px;color:var(--text-white);font-size:0.88rem;outline:none;transition:all 0.25s ease}.input-field input:focus{border-color:var(--slate-accent);box-shadow:0 0 0 3px rgba(103,111,157,0.25)}
+.form-options{display:flex;justify-content:space-between;align-items:center;font-size:0.8rem}.checkbox-container{display:flex;align-items:center;gap:8px;color:var(--text-muted);cursor:pointer}.checkbox-container input{accent-color:var(--peach-amber)}.forgot-link{color:var(--text-muted);text-decoration:none}.forgot-link:hover{color:var(--peach-amber)}
+.accent-btn{background:var(--peach-amber);color:#121622;border:none;border-radius:10px;padding:13px;font-size:0.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;transition:background 0.25s ease,transform 0.2s ease}.accent-btn:hover{background:var(--peach-hover);transform:translateY(-1px)}.accent-btn:disabled{opacity:0.6;cursor:not-allowed}
+.status-floating-pill{margin-top:24px;background:rgba(18,22,34,0.6);border:1px solid var(--border-soft);border-radius:20px;padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:0.72rem;color:var(--text-muted)}.pulse-indicator{width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 8px #10b981}
+.dashboard{display:none;position:relative;z-index:2;width:100%;max-width:1100px;grid-template-columns:300px 1fr;gap:20px}
+.dashboard.active{display:grid}
+.dash-card{background:var(--panel-bg);border:1px solid var(--border-soft);border-radius:20px;padding:20px;backdrop-filter:blur(20px)}
+.toast{position:fixed;top:20px;right:20px;z-index:99;background:#1a1f3a;border:1px solid var(--border-soft);padding:12px 18px;border-radius:10px;font-size:0.85rem;transform:translateX(400px);transition:transform 0.3s ease}
+.toast.show{transform:translateX(0)}
+@media(max-width:900px){.dashboard{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="bg-3d-scene"><div class="mesh-3d"></div><div class="vortex-glow"></div><div class="bg-cube-wrapper"><div class="cube-3d"><div class="face front"><span>CodeSage</span></div><div class="face back"><span>Vault</span></div><div class="face right"><span>AI</span></div><div class="face left"><span>Core</span></div><div class="face top"></div><div class="face bottom"></div></div></div><div class="sphere-3d orb-1"></div><div class="sphere-3d orb-2"></div></div>
+
+<main class="auth-container" id="authPage">
+<div class="auth-card">
+<div class="brand-box"><div class="logo-icon"><i class="fa-solid fa-code-merge"></i></div><div class="brand-text"><h2>CodeSage <span>AI</span></h2><p>Snippet Vault & Dev Workspace</p></div></div>
+<div class="tab-switch"><button class="tab-btn active" id="login-tab" onclick="switchTab('login')">Sign In</button><button class="tab-btn" id="signup-tab" onclick="switchTab('signup')">Sign Up</button></div>
+<div class="welcome-head"><h1 id="welcome-title">Welcome back!</h1><p id="welcome-sub">Enter your credentials to access your workspace</p></div>
+
+<form id="login-form" class="auth-form active">
+<div class="input-group"><label>Email or Username</label><div class="input-field"><i class="fa-regular fa-envelope field-icon"></i><input type="text" id="login-email" placeholder="developer@codesage.ai" required></div><small>Backend treats this as <b>username</b> (e.g. ahmed)</small></div>
+<div class="input-group"><label>Password</label><div class="input-field"><i class="fa-solid fa-lock field-icon"></i><input type="password" id="login-password" placeholder="••••••••" required><i class="fa-regular fa-eye toggle-pwd" onclick="togglePasswordVisibility('login-password',this)"></i></div></div>
+<div class="form-options"><label class="checkbox-container"><input type="checkbox" checked><span></span>Remember me</label><a href="#" class="forgot-link">Forgot password?</a></div>
+<button type="submit" class="accent-btn"><span>Continue to Workspace</span><i class="fa-solid fa-arrow-right"></i></button>
+</form>
+
+<form id="signup-form" class="auth-form">
+<div class="input-group"><label>Full Name</label><div class="input-field"><i class="fa-regular fa-user field-icon"></i><input type="text" id="signup-name" placeholder="Alex Morgan"></div></div>
+<div class="input-group"><label>Username (use this to login)</label><div class="input-field"><i class="fa-regular fa-envelope field-icon"></i><input type="text" id="signup-email" placeholder="ahmed" required></div></div>
+<div class="input-group"><label>Password</label><div class="input-field"><i class="fa-solid fa-lock field-icon"></i><input type="password" id="signup-password" placeholder="Minimum 8 characters" minlength="8" required><i class="fa-regular fa-eye toggle-pwd" onclick="togglePasswordVisibility('signup-password',this)"></i></div></div>
+<button type="submit" class="accent-btn"><span>Create Account</span><i class="fa-solid fa-arrow-right"></i></button>
+</form>
+
+<div class="status-floating-pill"><div class="pulse-indicator"></div><span>End-to-End Encrypted Developer Workspace</span></div>
+</div>
+</main>
+
+<div class="dashboard" id="dashPage">
+<div class="dash-card"><h3 style="margin-bottom:12px"><i class="fa-solid fa-user"></i> <span id="userLabel"></span></h3><button class="accent-btn" style="width:100%" onclick="logout()">Logout</button><hr style="margin:16px 0;border-color:rgba(255,255,255,0.1)"><h4>Upload Code</h4><input type="file" id="fileInput" style="margin:10px 0"><button class="accent-btn" style="width:100%" onclick="uploadFile()">Upload & Index</button><div id="myCodes" style="margin-top:20px;font-size:0.8rem"></div></div>
+<div class="dash-card"><h3>Ask Your Codebase</h3><div id="chatBox" style="height:300px;overflow-y:auto;background:rgba(0,0,0,0.2);border-radius:10px;padding:12px;margin:12px 0;font-size:0.85rem">Upload your code and ask anything!</div><div style="display:flex;gap:8px"><input id="question" placeholder="e.g. where is login function?" style="flex:1;padding:10px;border-radius:8px;border:1px solid #424769;background:rgba(18,22,34,0.6);color:white"><button class="accent-btn" onclick="ask()">Ask</button></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin.includes('8000') ? window.location.origin : 'http://127.0.0.1:8000';
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+function switchTab(tab){const lf=document.getElementById('login-form'),sf=document.getElementById('signup-form'),lb=document.getElementById('login-tab'),sb=document.getElementById('signup-tab'),title=document.getElementById('welcome-title'),sub=document.getElementById('welcome-sub');if(tab==='login'){lf.classList.add('active');sf.classList.remove('active');lb.classList.add('active');sb.classList.remove('active');title.innerText='Welcome back!';sub.innerText='Enter your credentials to access your workspace'}else{sf.classList.add('active');lf.classList.remove('active');sb.classList.add('active');lb.classList.remove('active');title.innerText='Create Account';sub.innerText='Join CodeSage AI developer environment'}}
+function togglePasswordVisibility(id,icon){const inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';icon.classList.replace('fa-eye','fa-eye-slash')}else{inp.type='password';icon.classList.replace('fa-eye-slash','fa-eye')}}
+document.getElementById('signup-form').addEventListener('submit',async(e)=>{e.preventDefault();const username=document.getElementById('signup-email').value.trim(),password=document.getElementById('signup-password').value;try{const r=await fetch(`${API}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});const d=await r.json();if(r.ok){toast('Account created! Now login');switchTab('login')}else{toast(d.detail||'Signup failed')}}catch(err){toast('Backend not running')}})
+document.getElementById('login-form').addEventListener('submit',async(e)=>{e.preventDefault();const username=document.getElementById('login-email').value.trim(),password=document.getElementById('login-password').value;const form=new URLSearchParams();form.append('username',username);form.append('password',password);try{const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:form});const d=await r.json();if(r.ok){localStorage.setItem('access_token',d.access_token);localStorage.setItem('username',username);showDash()}else{toast(d.detail||'Login failed')}}catch(err){toast('Backend not running - python run.py karo')}})
+function showDash(){document.getElementById('authPage').style.display='none';document.getElementById('dashPage').classList.add('active');document.getElementById('userLabel').innerText=localStorage.getItem('username');loadCodes()}
+function logout(){localStorage.clear();document.getElementById('authPage').style.display='flex';document.getElementById('dashPage').classList.remove('active')}
+async function uploadFile(){const f=document.getElementById('fileInput').files[0];if(!f)return toast('File select karo');const fd=new FormData();fd.append('file',f);try{const r=await fetch(`${API}/code/upload`,{method:'POST',headers:{Authorization:`Bearer ${localStorage.getItem('access_token')}`},body:fd});const d=await r.json();if(r.ok){toast('Uploaded!');loadCodes()}else toast(d.detail)}catch(e){toast('Upload failed')}} 
+async function loadCodes(){try{const r=await fetch(`${API}/code/my-codes`,{headers:{Authorization:`Bearer ${localStorage.getItem('access_token')}`}});const d=await r.json();document.getElementById('myCodes').innerHTML=`<b>My Codes (${d.length||0}):</b><br>`+(d.map?d.map(c=>`• ${c.filename||c.name}`).join('<br>'):'');}catch(e){}}
+async function ask(){const q=document.getElementById('question').value;if(!q)return;const box=document.getElementById('chatBox');box.innerHTML+=`<div><b>You:</b> ${q}</div>`;try{const r=await fetch(`${API}/code/chat`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${localStorage.getItem('access_token')}`},body:JSON.stringify({question:q})});const d=await r.json();box.innerHTML+=`<div style="margin:8px 0;padding:8px;background:rgba(247,162,97,0.1);border-radius:6px"><b>Sage:</b> ${d.answer||d.detail||JSON.stringify(d)}</div>`;box.scrollTop=box.scrollHeight}catch(e){box.innerHTML+='<div>Error - backend check karo</div>'}}
+if(localStorage.getItem('access_token'))showDash();
+</script>
+</body>
+</html>
