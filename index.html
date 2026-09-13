@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeSage AI - App Model Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Raleway',sans-serif}
+:root{--accent:#f7a261;--border:rgba(255,255,255,0.12);--muted:#a6adbb}
+body{background:#0d101a;color:#fff;min-height:100vh;overflow:hidden}
+.auth-bg{position:fixed;inset:0;background:radial-gradient(600px at 20% 20%, rgba(247,162,97,0.15), transparent 60%),radial-gradient(800px at 80% 80%, rgba(103,111,157,0.18), transparent 60%),#0d101a}
+.auth-container{position:relative;z-index:1;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+.auth-card{background:rgba(25,29,48,0.9);border:1px solid var(--border);border-radius:24px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.logo-icon{width:42px;height:42px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#121622}
+.auth-form{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.input-field{position:relative;display:flex;align-items:center}
+.input-field i{position:absolute;left:12px;color:var(--muted);font-size:0.85rem}
+.input-field input{width:100%;background:rgba(18,22,34,0.9);border:1px solid #424769;border-radius:10px;padding:11px 12px 11px 36px;color:#fff;outline:none}
+.accent-btn{background:var(--accent);color:#121622;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.toast{position:fixed;top:18px;right:18px;z-index:99;background:#1a1f3a;border:1px solid var(--border);padding:10px 16px;border-radius:10px;transform:translateX(400px);transition:0.3s}
+.toast.show{transform:translateX(0)}
+
+/* ONLY APP MODEL - NO OLD INTERFACE */
+.app-dashboard{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;background:#0d101a}
+.app-dashboard.active{display:flex}
+.app-header{height:50px;background:#191d30;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+.model-wrap{flex:1;background:white}
+.model-wrap iframe{width:100%;height:100%;border:none}
+</style>
+</head>
+<body>
+<div class="auth-bg"></div>
+
+<div class="auth-container" id="authPage">
+<div class="auth-card">
+<div class="logo"><div class="logo-icon"><i class="fa-solid fa-code-merge"></i></div><div><b>CodeSage AI</b> <span style="color:var(--accent)">Model</span><br><small style="color:var(--muted);font-size:0.7rem">App Model Live</small></div></div>
+<h2 style="font-size:1.3rem">Login to App Model</h2>
+<p style="font-size:0.8rem;color:var(--muted);margin-top:4px">Access your Streamlit model: aashir-oss-codesage-ai-app-nerb3i.streamlit.app</p>
+<form id="login-form" class="auth-form">
+<div><label style="font-size:0.75rem;color:var(--muted)">Username</label><div class="input-field"><i class="fa-regular fa-user"></i><input type="text" id="login-email" placeholder="anisa" required></div></div>
+<div><label style="font-size:0.75rem;color:var(--muted)">Password</label><div class="input-field"><i class="fa-solid fa-lock"></i><input type="password" id="login-password" placeholder="••••••••" required></div></div>
+<button type="submit" class="accent-btn"><span>Open App Model</span><i class="fa-solid fa-arrow-right"></i></button>
+</form>
+<div style="margin-top:16px;padding:8px;background:rgba(247,162,97,0.1);border-radius:8px;font-size:0.65rem;text-align:center;color:var(--muted)">
+<i class="fa-solid fa-link"></i> https://aashir-oss-codesage-ai-app-nerb3i.streamlit.app/<br>✅ Connected
+</div>
+</div>
+</div>
+
+<!-- DELETED OLD INTERFACE - ONLY APP MODEL EMBED -->
+<div class="app-dashboard" id="dashPage">
+<div class="app-header">
+<div style="display:flex;align-items:center;gap:10px"><i class="fa-solid fa-robot" style="color:var(--accent)"></i><b>CodeSage AI Model</b><span style="font-size:0.6rem;background:#10b981;color:white;padding:2px 6px;border-radius:10px">● LIVE</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span id="userLabel" style="font-size:0.8rem;padding:4px 10px;background:rgba(255,255,255,0.08);border-radius:20px">anisa</span><a href="https://aashir-oss-codesage-ai-app-nerb3i.streamlit.app/" target="_blank" style="padding:5px 10px;background:var(--accent);color:#121622;border-radius:6px;font-size:0.7rem;font-weight:700;text-decoration:none">Open</a><button onclick="logout()" style="padding:5px 10px;background:rgba(255,59,59,0.15);border:1px solid rgba(255,59,59,0.3);color:#ff6b6b;border-radius:6px;font-size:0.7rem;cursor:pointer">Logout</button></div>
+</div>
+<div class="model-wrap">
+<iframe src="https://aashir-oss-codesage-ai-app-nerb3i.streamlit.app/?embed=true" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const API=window.location.origin;
+const HEADERS={'ngrok-skip-browser-warning':'true'};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+document.getElementById('login-form').addEventListener('submit',async(e)=>{
+ e.preventDefault();
+ const u=document.getElementById('login-email').value.trim();
+ const p=document.getElementById('login-password').value;
+ const form=new URLSearchParams();form.append('username',u);form.append('password',p);
+ try{
+  const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',...HEADERS},body:form});
+  const d=await r.json();
+  if(r.ok){localStorage.setItem('access_token',d.access_token);localStorage.setItem('username',u);showDash()}
+  else toast(d.detail||'Login failed')
+ }catch{toast('Backend error')}
+});
+function showDash(){
+ document.getElementById('authPage').style.display='none';
+ document.getElementById('dashPage').classList.add('active');
+ document.getElementById('userLabel').innerText=localStorage.getItem('username')||'anisa';
+}
+function logout(){localStorage.clear();location.reload()}
+if(localStorage.getItem('access_token')) showDash();
+</script>
+</body>
+</html>
