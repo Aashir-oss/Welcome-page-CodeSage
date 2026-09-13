@@ -1,9 +1,28 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Body, Form
+from fastapi.responses import HTMLResponse, JSONResponse
 import os
 import uvicorn
+import json
 
 app = FastAPI()
+
+USERS_FILE = "users.json"
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_users(users):
+    try:
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(users, f, indent=2)
+    except Exception:
+        pass
 
 FINAL_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -42,7 +61,6 @@ body{background:#0d101a;color:#fff;min-height:100vh;overflow:hidden}
 .toast.show{transform:translateX(0)}
 .hidden{display:none!important}
 
-/* DASHBOARD - ONLY APP MODEL IFRAME AFTER LOGIN */
 .app-dashboard{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;background:#0d101a}
 .app-dashboard.active{display:flex}
 .app-header{height:54px;background:rgba(25,29,48,0.98);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
@@ -128,15 +146,16 @@ document.getElementById('login-form').addEventListener('submit',async(e)=>{
  try{
   const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',...HEADERS},body:form});
   const d=await r.json();
-  if(r.ok){localStorage.setItem('access_token',d.access_token);localStorage.setItem('username',u);toast('Login success!');showDash()}
-  else toast(d.detail||'Login failed')
+  if(r.ok){
+     localStorage.setItem('access_token',d.access_token);
+     localStorage.setItem('username',u);
+     toast('Login success!');
+     showDash();
+  } else {
+     toast(d.detail || 'Login failed');
+  }
  }catch(err){
-  // For Vercel demo - allow direct login without backend (public link case)
-  console.log('Backend not reachable, demo mode');
-  localStorage.setItem('access_token','demo_token');
-  localStorage.setItem('username',u||'anisa');
-  toast('Demo Login - Opening App Model');
-  showDash();
+  toast('Backend server error. Please check python run.py');
  }
 });
 
@@ -149,9 +168,14 @@ document.getElementById('register-form').addEventListener('submit',async(e)=>{
  try{
   const r=await fetch(`${API}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json',...HEADERS},body:JSON.stringify({username,email,password})});
   const d=await r.json();
-  if(r.ok){toast('Account created! Please login');showLogin();document.getElementById('login-email').value=username}
-  else toast(d.detail||'Register failed')
- }catch{
+  if(r.ok){
+     toast('Account created successfully! Please login.');
+     showLogin();
+     document.getElementById('login-email').value=username;
+  } else {
+     toast(d.detail||'Registration failed');
+  }
+ }catch(err){
   toast('Backend not running - python run.py chalao');
  }
 });
@@ -182,10 +206,9 @@ async def root():
                 with open(p, "r", encoding="utf-8") as f:
                     content = f.read()
                     if "Upload Code" in content and "Ask Your Codebase" in content:
-                        print(f"Old file found at {p}, using FINAL instead")
                         continue
                     return HTMLResponse(content=content)
-            except:
+            except Exception:
                 pass
     return HTMLResponse(content=FINAL_HTML)
 
@@ -193,17 +216,34 @@ async def root():
 async def health():
     return {"status": "ok", "model": "https://aashir-oss-codesage-ai-app-nerb3i.streamlit.app/"}
 
-try:
-    from app.auth.routes import router as auth_router
-    app.include_router(auth_router, prefix="/auth")
-except Exception as e:
-    print(f"Auth not loaded demo mode: {e}")
-    @app.post("/auth/login")
-    async def demo_login():
-        return {"access_token": "demo_token"}
-    @app.post("/auth/register")
-    async def demo_register():
-        return {"message": "created"}
+# REGISTER ENDPOINT
+@app.post("/auth/register")
+async def register_user(data: dict = Body(...)):
+    username = data.get("username")
+    password = data.get("password")
+    
+    if not username or not password:
+        return JSONResponse(status_code=400, content={"detail": "Username and password required"})
+        
+    users = load_users()
+    if username in users:
+        return JSONResponse(status_code=400, content={"detail": "User already exists. Please login."})
+        
+    users[username] = {"username": username, "password": password}
+    save_users(users)
+    return {"message": "Account created successfully"}
+
+# LOGIN ENDPOINT
+@app.post("/auth/login")
+async def login_user(username: str = Form(...), password: str = Form(...)):
+    users = load_users()
+    if username not in users:
+        return JSONResponse(status_code=400, content={"detail": "Account does not exist. Please register first!"})
+        
+    if users[username].get("password") != password:
+        return JSONResponse(status_code=400, content={"detail": "Invalid password. Please try again."})
+        
+    return {"access_token": "valid_token"}
 
 if __name__ == "__main__":
     print("CodeSage AI running - Login -> App Model")
