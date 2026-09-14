@@ -8,17 +8,19 @@ Serves index.html at "/".
 """
 
 import os
+import re
 import json
+import threading
 import bcrypt
 import uvicorn
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, field_validator
 from jose import jwt, JWTError
 
 # ------------------------------------------------------------------
@@ -32,6 +34,9 @@ BASE_DIR = Path(__file__).resolve().parent
 USERS_FILE = BASE_DIR / "users.json"
 INDEX_FILE = BASE_DIR / "index.html"
 
+# Thread lock for safe read-modify-write on users.json
+_users_lock = threading.Lock()
+
 app = FastAPI(title="CodeSage AI Auth")
 app.add_middleware(
     CORSMiddleware,
@@ -44,7 +49,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # ------------------------------------------------------------------
-# USERS STORE  (JSON file, thread-safe enough for demo)
+# USERS STORE  (JSON file with atomic writes + lock)
 # ------------------------------------------------------------------
 def load_users() -> dict:
     if not USERS_FILE.exists():
@@ -56,24 +61,30 @@ def load_users() -> dict:
         return {}
 
 def save_users(users: dict) -> None:
-    with open(USERS_FILE, "w", encoding="utf-8") as f:
+    """Atomic write to avoid corrupting users.json on crash."""
+    tmp = USERS_FILE.with_suffix(".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(users, f, indent=2, ensure_ascii=False)
+    tmp.replace(USERS_FILE)
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
+    return bcrypt.hashpw(
+        password.encode("utf-8"), bcrypt.gensalt(rounds=12)
+    ).decode("utf-8")
 
 def verify_password(password: str, stored_hash: str) -> bool:
     """
     Supports BOTH:
       - bcrypt hashes  (start with $2a$/$2b$/$2y$)
       - legacy plaintext (old users.json entries)
-    On successful plaintext match, callers may upgrade the hash.
     """
     if not stored_hash:
         return False
     if stored_hash.startswith(("$2a$", "$2b$", "$2y$")):
         try:
-            return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+            return bcrypt.checkpw(
+                password.encode("utf-8"), stored_hash.encode("utf-8")
+            )
         except ValueError:
             return False
     # legacy plaintext comparison
@@ -86,10 +97,11 @@ def is_bcrypt(stored: str) -> bool:
 # JWT
 # ------------------------------------------------------------------
 def create_token(username: str) -> str:
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": username,
-        "exp": datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
-        "iat": datetime.utcnow(),
+        "exp": now + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
+        "iat": now,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -115,37 +127,62 @@ def current_user(token: str = Depends(oauth2_scheme)) -> str:
 # ------------------------------------------------------------------
 # MODELS
 # ------------------------------------------------------------------
+USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
+
 class RegisterBody(BaseModel):
     username: str
     password: str
-    email: str | None = None
+    email: EmailStr | None = None
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        v = v.strip()
+        if not USERNAME_RE.fullmatch(v):
+            raise ValueError(
+                "Username must be 3-32 chars: letters, digits, _ . -"
+            )
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return v
 
 # ------------------------------------------------------------------
 # ROUTES
 # ------------------------------------------------------------------
 @app.post("/auth/register")
 async def register(body: RegisterBody):
-    username = body.username.strip()
+    username = body.username
     password = body.password
-    email = (body.email or "").strip()
+    email = (str(body.email) if body.email else "").strip()
 
-    if not username or not password:
-        raise HTTPException(400, "Username and password required")
-    if len(password) < 6:
-        raise HTTPException(400, "Password must be at least 6 characters")
+    with _users_lock:
+        users = load_users()
+        if username in users:
+            raise HTTPException(400, "Username already exists")
 
-    users = load_users()
-    if username in users:
-        raise HTTPException(400, "Username already exists")
+        users[username] = {
+            "username": username,
+            "email": email,
+            "password": hash_password(password),
+            "created": datetime.now(timezone.utc).strftime(
+                "%Y-%m-%d %H:%M:%S.%f"
+            ),
+        }
+        save_users(users)
 
-    users[username] = {
+    # Auto-login: return a token right after signup
+    token = create_token(username)
+    return {
+        "message": "Account created",
         "username": username,
-        "email": email,
-        "password": hash_password(password),
-        "created": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f"),
+        "access_token": token,
+        "token_type": "bearer",
     }
-    save_users(users)
-    return {"message": "Account created", "username": username}
 
 
 @app.post("/auth/login")
@@ -167,8 +204,11 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
 
     # Upgrade legacy plaintext hash to bcrypt on successful login
     if not is_bcrypt(stored):
-        user["password"] = hash_password(password)
-        save_users(users)
+        with _users_lock:
+            users = load_users()
+            if username in users:
+                users[username]["password"] = hash_password(password)
+                save_users(users)
 
     token = create_token(username)
     return {
@@ -193,7 +233,6 @@ async def me(username: str = Depends(current_user)):
 async def health():
     return {
         "status": "ok",
-        "users": len(load_users()),
         "model": "https://aashir-oss-codesage-ai-app-nerb3i.streamlit.app/",
     }
 
@@ -202,7 +241,10 @@ async def health():
 async def root():
     if INDEX_FILE.exists():
         return HTMLResponse(INDEX_FILE.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>CodeSage AI – backend running. Put index.html next to run.py.</h1>")
+    return HTMLResponse(
+        "<h1>CodeSage AI – backend running. "
+        "Put index.html next to run.py.</h1>"
+    )
 
 
 if __name__ == "__main__":
